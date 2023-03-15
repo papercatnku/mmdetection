@@ -9,28 +9,29 @@ model = dict(
     random_size_range=(15, 25),
     random_size_interval=10,
     backbone=dict(
-    type='CSPDarknet',
-    deepen_factor=0.33,
-    widen_factor=0.25,
-    use_depthwise=True,
-    act_cfg= dict(type='ReLU')
+        type='CSPDarknet',
+        deepen_factor=0.33,
+        widen_factor=0.25,
+        use_depthwise=True,
+        act_cfg= dict(type='ReLU')
     ),
     neck=dict(
         type='YOLOXPAFPN',
         in_channels=[64, 128, 256],
         out_channels=64,
         num_csp_blocks=1,
+        act_cfg= dict(type='ReLU'),
         use_depthwise=True),
     bbox_head=dict(
-        type='YOLOXHead', num_classes=1, in_channels=64, feat_channels=64, use_depthwise=True),
+        type='YOLOXHead', num_classes=1, in_channels=64, feat_channels=64, use_depthwise=True, act_cfg= dict(type='ReLU')),
     train_cfg=dict(assigner=dict(type='SimOTAAssigner', center_radius=2.5)),
     # In order to align the source code, the threshold of the val phase is
     # 0.01, and the threshold of the test phase is 0.001.
     test_cfg=dict(score_thr=0.01, nms=dict(type='nms', iou_threshold=0.65)))
 
 # dataset settings
-data_root = '/media/112new_sde/LPD/COCOStyleAnnotations/LPD/onecls/'
-# data_root = '/media/112new_sde/LPD/COCOStyleAnnotations/LPD/onecls_all/'
+
+data_root = '/media/112new_sde/LPD/LPDAnnotations/coco_style/cls_1/'
 
 dataset_type = 'CocoDataset'
 img_prefix = '/media/112new_sde/LPD/DTC_RAW/'
@@ -68,7 +69,7 @@ train_dataset = dict(
     type='MultiImageMixDataset',
     dataset=dict(
         type=dataset_type,
-        ann_file=data_root + 'train.json',
+        ann_file=data_root + 'train_annotations.json',
         classes=['LP',],
         img_prefix=img_prefix,
         seg_suffix='',
@@ -99,20 +100,20 @@ test_pipeline = [
 ]
 
 data = dict(
-    samples_per_gpu=8,
+    samples_per_gpu=24,
     workers_per_gpu=4,
     persistent_workers=True,
     train=train_dataset,
     val=dict(
         type=dataset_type,
-        ann_file=data_root + 'val.json',
+        ann_file=data_root + 'val_annotations.json',
         classes=['LP',],
         img_prefix=img_prefix,
         seg_suffix='',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
-        ann_file=data_root + 'val.json',
+        ann_file=data_root + 'val_annotations.json',
         classes=['LP',],
         img_prefix=img_prefix,
         seg_suffix='',

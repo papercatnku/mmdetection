@@ -87,7 +87,9 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
                      a=math.sqrt(5),
                      distribution='uniform',
                      mode='fan_in',
-                     nonlinearity='leaky_relu')):
+                     nonlinearity='leaky_relu'),
+                 merge_out=False,
+                     ):
 
         super().__init__(init_cfg=init_cfg)
         self.num_classes = num_classes
@@ -96,6 +98,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         self.feat_channels = feat_channels
         self.stacked_convs = stacked_convs
         self.strides = strides
+        self.num_strides = len(strides)
         self.use_depthwise = use_depthwise
         self.dcn_on_last_conv = dcn_on_last_conv
         assert conv_bias == 'auto' or isinstance(conv_bias, bool)
@@ -127,6 +130,10 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
 
         self.fp16_enabled = False
         self._init_layers()
+
+        self.merge_out = merge_out
+
+
 
     def _init_layers(self):
         self.multi_level_cls_convs = nn.ModuleList()
@@ -195,6 +202,35 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
 
         return cls_score, bbox_pred, objectness
 
+
+    def _merge_out(self, multi_level_res):
+
+        n,n_cls,_,_ = multi_level_res[0][0].shape
+
+        merged_cls = torch.cat(
+            [torch.reshape(x,(n,1,-1)) for x in multi_level_res[0]],
+            dim=2,
+        )
+
+        merged_bbox = torch.cat(
+            [torch.reshape(x,(n,4,-1)) for x in multi_level_res[1]],
+            dim=2,
+        )
+
+        merged_obj = torch.cat(
+            [torch.reshape(x,(n,n_cls,-1)) for x in multi_level_res[2]],
+            dim=2,
+        )
+
+        return merged_obj, merged_cls, merged_bbox
+
+        
+
+        return [
+            torch.cat(
+            [torch.flatten(x,start_dim=2) for x in y],
+            dim=2) for y in multi_level_res]
+
     def forward(self, feats):
         """Forward features from the upstream network.
 
@@ -206,12 +242,18 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
                 4D-tensor of shape (batch_size, 5+num_classes, height, width).
         """
 
-        return multi_apply(self.forward_single, feats,
+        yolox_head_res = multi_apply(self.forward_single, feats,
                            self.multi_level_cls_convs,
                            self.multi_level_reg_convs,
                            self.multi_level_conv_cls,
                            self.multi_level_conv_reg,
                            self.multi_level_conv_obj)
+
+        if self.merge_out and torch.onnx.is_in_onnx_export():
+            # when exports
+            return self._merge_out(yolox_head_res)
+        else:
+            return yolox_head_res 
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'objectnesses'))
     def get_bboxes(self,
