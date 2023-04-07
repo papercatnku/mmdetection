@@ -126,3 +126,8 @@ work_dirs/
 
 # models
 *.onnx
+
+tocheck*
+to_check*
+scratch.ipynb
+*.bin

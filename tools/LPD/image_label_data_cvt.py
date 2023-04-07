@@ -91,12 +91,15 @@ class mulpti_process_base:
 
         return
     
-    def split_train_val(self, val_ratio=0.05):
+    def split_train_val(self, val_ratio=0.05, debug_num=None):
+        shuffle(self.mem_ls)
         total_num = len(self.mem_ls)
+        if debug_num:
+            total_num = debug_num
         val_num = int(round(val_ratio*total_num))
         train_num = total_num- val_num
-        shuffle(self.mem_ls)
-        self.train_ls, self.val_ls = self.mem_ls[:train_num], self.mem_ls[train_num:]
+        
+        self.train_ls, self.val_ls = self.mem_ls[:train_num], self.mem_ls[train_num:total_num]
         print(f'train num: {train_num}\tval num: {val_num}')
         return
     
@@ -245,10 +248,20 @@ class obj_det_cvt_base(mulpti_process_base):
         else:
             return
     
-    def filt_quad_label(self, img_info, label_info):
+    def if_label_valid(self, quad_info):
+        return True
+    
+    def filt_quad_label(self, img_info, label_info): 
+        out_quad_info_ls = []
+        out_labelinfo = label_info.copy()
         for quad in label_info['quad_ls']:
-            pass
-        return img_info, label_info
+            if(self.if_label_valid(quad)):
+                out_quad_info_ls.append(quad.copy())
+
+        out_labelinfo['quad_ls'] = out_quad_info_ls
+                
+        return img_info, out_labelinfo
+
     
     def export_coco(self, out_dir):
         # train_anno_file
@@ -341,7 +354,7 @@ class lpd_one_cls_cvt(obj_det_cvt_base):
             'yellow-black-single_Plate': 'LP',
             'motorcycle_Plate': 'LP',
             'yellow-black-double_Plate': 'LP',
-            'paint_Plate': 'LP',
+            # 'paint_Plate': 'LP',
             'green_Plate': 'LP',
             'yellow_black_single_Plate': 'LP',
             'white-black_Plate': 'LP',
@@ -353,12 +366,21 @@ class lpd_one_cls_cvt(obj_det_cvt_base):
             'black_Plate': 'LP',
             'police_Plate': 'LP'
         }
+        self.ignore_type_ls = [
+            'paint_Plate'
+        ]
         # innertype => superid, id
         self.innertype_id_mapping={
             'LP':(0,'LP')
         }
 
         return
+    
+    def if_label_valid(self, quad_info):
+
+        if quad_info['type'] in self.ignore_type_ls:
+            return False
+        return True
     
 class lpd_multi_cls_cvt(obj_det_cvt_base):
     # TODO: 修改适配多类别检测需要
@@ -410,18 +432,24 @@ if __name__ == '__main__':
         '/media/112new_sde/LPD/DTC_RAW/APA/',
         '/media/112new_sde/LPD/DTC_RAW/HK_Macau/'
     ] 
-    val_ratio=0.03
+    val_ratio=0.05
     
-    out_coco = '/media/112new_sde/LPD/LPDAnnotations/coco_style/cls_1'
+
+    out_coco = '/media/112new_sde/LPD/LPDAnnotations/coco_style/cls_1_nopaint/'
     cvt = lpd_one_cls_cvt(
-    # out_coco = '/media/112new_sde/LPD/LPDAnnotations/coco_style/cls_8'
-    # cvt = lpd_multi_cls_cvt(
         base_dir=base_dir,
         num_process=20,
     )
+    
+    # out_coco = '/media/112new_sde/LPD/LPDAnnotations/coco_style/cls_8'
+    # cvt = lpd_multi_cls_cvt(
+    #     base_dir=base_dir,
+    #     num_process=20,
+    # )
     for cur_dir in src_dir_ls:
         cvt.process_dir(cur_dir)
 
+    # cvt.split_train_val(val_ratio=val_ratio,debug_num=4000)
     cvt.split_train_val(val_ratio=val_ratio)
 
     cvt.export(out_coco,type='COCO')

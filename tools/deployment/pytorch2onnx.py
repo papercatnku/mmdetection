@@ -24,7 +24,9 @@ def pytorch2onnx(model,
                  test_img=None,
                  do_simplify=False,
                  dynamic_export=None,
-                 skip_postprocess=False):
+                 skip_postprocess=False,
+                 output_names=None,
+                 ):
 
     input_config = {
         'input_shape': input_shape,
@@ -36,6 +38,12 @@ def pytorch2onnx(model,
     img_list, img_meta_list = [one_img], [[one_meta]]
 
     if skip_postprocess:
+
+        if output_names:
+            onnx_output_nodes = output_names
+        else:
+            onnx_output_nodes = None
+            
         warnings.warn('Not all models support export onnx without post '
                       'process, especially two stage detectors!')
         model.forward = model.forward_dummy
@@ -44,6 +52,8 @@ def pytorch2onnx(model,
             one_img,
             output_file,
             input_names=['input'],
+            # hard code for yolox
+            output_names=onnx_output_nodes,
             export_params=True,
             keep_initializers_as_inputs=True,
             do_constant_folding=True,
@@ -274,6 +284,13 @@ def parse_args():
         help='Whether to export model without post process. Experimental '
         'option. We do not guarantee the correctness of the exported '
         'model.')
+    
+    parser.add_argument(
+        '--output-names',
+        type=lambda x: [x.strip() for x in x.split(',')],
+        default=[],
+        help='Output names of the exported model. If not specified, use default in onnx export'
+    )
     args = parser.parse_args()
     return args
 
@@ -328,7 +345,9 @@ if __name__ == '__main__':
         test_img=args.test_img,
         do_simplify=args.simplify,
         dynamic_export=args.dynamic_export,
-        skip_postprocess=args.skip_postprocess)
+        skip_postprocess=args.skip_postprocess,
+        output_names=args.output_names
+        )
 
     # Following strings of text style are from colorama package
     bright_style, reset_style = '\x1b[1m', '\x1b[0m'
