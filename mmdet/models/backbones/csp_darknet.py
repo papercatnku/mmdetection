@@ -119,6 +119,57 @@ class SPPBottleneck(BaseModule):
         x = self.conv2(x)
         return x
 
+class SPPFBottleneck(BaseModule):
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 kernel_size_base=5,
+                 kernel_sizes=(5, 9, 13),
+                 conv_cfg=None,
+                 norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
+                 act_cfg=dict(type='Swish'),
+                 init_cfg=None):
+        super().__init__(init_cfg)
+        mid_channels = in_channels // 2
+        self.conv1 = ConvModule(
+            in_channels,
+            mid_channels,
+            1,
+            stride=1,
+            conv_cfg=conv_cfg,
+            norm_cfg=norm_cfg,
+            act_cfg=act_cfg)
+        self.kernel_size_base = kernel_size_base
+        assert(kernel_sizes[0] == kernel_size_base)
+        for ks in kernel_sizes[1:]:
+            assert(ks %(self.kernel_size_base-1) == 1)
+        self.poolings = nn.ModuleList(
+            [
+            nn.Sequential(
+                *[
+            nn.MaxPool2d(
+            kernel_size=ks, 
+            stride=1, padding=ks // 2) for _ in range((ks-1) // (self.kernel_size_base-1))
+            ])
+            # nn.MaxPool2d(kernel_size=ks, stride=1, padding=ks // 2)
+            for ks in kernel_sizes]
+            )
+        conv2_channels = mid_channels * (len(kernel_sizes) + 1)
+        self.conv2 = ConvModule(
+            conv2_channels,
+            out_channels,
+            1,
+            conv_cfg=conv_cfg,
+            norm_cfg=norm_cfg,
+            act_cfg=act_cfg)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = torch.cat([x] + [pooling(x) for pooling in self.poolings], dim=1)
+        x = self.conv2(x)
+        return x
+
+
 
 @BACKBONES.register_module()
 class CSPDarknet(BaseModule):
@@ -167,6 +218,8 @@ class CSPDarknet(BaseModule):
     # From left to right:
     # in_channels, out_channels, num_blocks, add_identity, use_spp
     arch_settings = {
+        'P4': [[64, 128, 3, True, False], [128, 256, 9, True, False],
+               [256, 512, 9, True, True]],
         'P5': [[64, 128, 3, True, False], [128, 256, 9, True, False],
                [256, 512, 9, True, False], [512, 1024, 3, False, True]],
         'P6': [[64, 128, 3, True, False], [128, 256, 9, True, False],
@@ -237,7 +290,7 @@ class CSPDarknet(BaseModule):
                 act_cfg=act_cfg)
             stage.append(conv_layer)
             if use_spp:
-                spp = SPPBottleneck(
+                spp = SPPFBottleneck(
                     out_channels,
                     out_channels,
                     kernel_sizes=spp_kernal_sizes,
