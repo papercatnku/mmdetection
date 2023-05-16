@@ -1,5 +1,7 @@
 #!/usr/bin/env zsh
 
+export NCCL_P2P_DISABLE=1
+
 CONFIG=$1
 GPUS=$2
 NNODES=${NNODES:-1}

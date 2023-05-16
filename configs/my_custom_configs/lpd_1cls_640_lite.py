@@ -1,6 +1,6 @@
 _base_ = ['../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py']
 
-img_scale = (640,640) # height, width
+img_scale = (640, 640)  # height, width
 
 num_classes = 1
 
@@ -9,11 +9,11 @@ test_backbone_cfg = dict(
     arch='P4',
     deepen_factor=0.5,
     widen_factor=0.25,
-    out_indices=(3,),    
+    out_indices=(3,),
     use_depthwise=False,
     spp_kernal_sizes=(5, 9, 13),
     act_cfg=dict(type='LeakyReLU', negative_slope=0.1)
-    )
+)
 test_neck_cfg = dict(
     type='YOLOXPAFPN',
     in_channels=[128,],
@@ -24,7 +24,7 @@ test_neck_cfg = dict(
     conv_cfg=None,
     norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
     act_cfg=dict(type='LeakyReLU', negative_slope=0.1),
-    )
+)
 test_head_cfg = dict(
     type='YOLOXHead',
     num_classes=num_classes,
@@ -32,8 +32,8 @@ test_head_cfg = dict(
     feat_channels=128,
     strides=[16,],
     use_depthwise=True,
-    act_cfg=dict(type='LeakyReLU', negative_slope=0.1)             
-    )
+    act_cfg=dict(type='LeakyReLU', negative_slope=0.1)
+)
 
 model = dict(
     type='YOLOX',
@@ -118,8 +118,8 @@ test_pipeline = [
 ]
 
 data = dict(
-    samples_per_gpu=24,
-    workers_per_gpu=4,
+    samples_per_gpu=48,
+    workers_per_gpu=8,
     persistent_workers=True,
     train=train_dataset,
     val=dict(
@@ -136,7 +136,7 @@ data = dict(
         img_prefix=img_prefix,
         seg_suffix='',
         pipeline=test_pipeline)
-        )
+)
 
 # optimizer
 # default 8 gpu
@@ -147,9 +147,9 @@ optimizer = dict(
     weight_decay=5e-4,
     nesterov=True,
     paramwise_cfg=dict(norm_decay_mult=0., bias_decay_mult=0.),
-    
-    )
-optimizer_config = dict(grad_clip=None,detect_anomalous_params=True)
+
+)
+optimizer_config = dict(grad_clip=None, detect_anomalous_params=True)
 
 max_epochs = 300
 num_last_epochs = 15
@@ -197,7 +197,5 @@ evaluation = dict(
     dynamic_intervals=[(max_epochs - num_last_epochs, 1)],
     metric='bbox',
     classwise=True,
-    )
+)
 log_config = dict(interval=50)
-
-
