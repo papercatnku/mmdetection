@@ -1,35 +1,56 @@
 _base_ = ['../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py']
 
-img_scale = (640, 640)
+img_scale = (512, 512)  # height, width
 
-# model settings
+num_classes = 1
+
+act_cfg = dict(type='LeakyReLU', negative_slope=0.1)
+
+test_backbone_cfg = dict(
+    type='CSPDarknet',
+    arch='P5',
+    deepen_factor=0.33,
+    widen_factor=0.5,
+    out_indices=(2, 3, 4),
+    use_depthwise=False,
+    spp_kernal_sizes=(5, 9),
+    act_cfg=act_cfg
+)
+
+test_neck_cfg = dict(
+    type='YOLOXPAFPN',
+    in_channels=[128, 256, 512],
+    out_channels=128,
+    num_csp_blocks=2,
+    use_depthwise=False,
+    upsample_cfg=dict(scale_factor=2, mode='bilinear'),
+    conv_cfg=None,
+    norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
+    act_cfg=act_cfg,
+)
+test_head_cfg = dict(
+    type='YOLOXHead',
+    num_classes=num_classes,
+    in_channels=128,
+    feat_channels=128,
+    strides=[8, 16, 32],
+    use_depthwise=True,
+    act_cfg=act_cfg
+)
+
 model = dict(
     type='YOLOX',
     input_size=img_scale,
-    random_size_range=(15, 25),
+    random_size_range=(12, 20),
     random_size_interval=10,
-    backbone=dict(
-        type='CSPDarknet',
-        deepen_factor=0.33,
-        widen_factor=0.25,
-        use_depthwise=True,
-        act_cfg=dict(type='ReLU')
-    ),
-    neck=dict(
-        type='YOLOXPAFPN',
-        in_channels=[64, 128, 256],
-        out_channels=64,
-        num_csp_blocks=1,
-        act_cfg=dict(type='ReLU'),
-        use_depthwise=True),
-    bbox_head=dict(
-        type='YOLOXHead', num_classes=1, in_channels=64, feat_channels=64, use_depthwise=True, act_cfg=dict(type='ReLU')),
+    backbone=test_backbone_cfg,
+    neck=test_neck_cfg,
+    bbox_head=test_head_cfg,
     train_cfg=dict(assigner=dict(type='SimOTAAssigner', center_radius=2.5)),
     # In order to align the source code, the threshold of the val phase is
     # 0.01, and the threshold of the test phase is 0.001.
-    test_cfg=dict(score_thr=0.01, nms=dict(type='nms', iou_threshold=0.65)))
-
-# dataset settings
+    test_cfg=dict(score_thr=0.01, nms=dict(type='nms', iou_threshold=0.65))
+)
 
 data_root = '/media/112new_sde/LPD/LPDAnnotations/coco_style/cls_1/'
 
@@ -128,8 +149,10 @@ optimizer = dict(
     momentum=0.9,
     weight_decay=5e-4,
     nesterov=True,
-    paramwise_cfg=dict(norm_decay_mult=0., bias_decay_mult=0.))
-optimizer_config = dict(grad_clip=None)
+    paramwise_cfg=dict(norm_decay_mult=0., bias_decay_mult=0.),
+
+)
+optimizer_config = dict(grad_clip=None, detect_anomalous_params=True)
 
 max_epochs = 300
 num_last_epochs = 15
