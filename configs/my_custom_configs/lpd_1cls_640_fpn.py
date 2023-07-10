@@ -53,7 +53,6 @@ model = dict(
 )
 
 data_root = '/media/112new_sde/LPD/LPDAnnotations/coco_style/cls_1/'
-
 dataset_type = 'CocoDataset'
 img_prefix = '/media/112new_sde/LPD/DTC_RAW/'
 
