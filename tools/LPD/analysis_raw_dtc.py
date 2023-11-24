@@ -1,6 +1,6 @@
 import numpy as np
 import mmcv
-import pickle 
+import pickle
 import os,sys
 import cv2
 import json
@@ -39,7 +39,7 @@ def get_subfiles(path, length=None):
 
 img_post_ls=['jpg','png','jpeg',]
 def makelabel_nm(x):
-    return x[:x.rfind('.')] + '.txt' 
+    return x[:x.rfind('.')] + '.txt'
 
 type_counts_map = defaultdict(lambda: 0)
 
@@ -57,10 +57,10 @@ class kvImgFilesMaintain:
             print(f'Unsupportted backend: {backend}')
 
         return
-    
+
     def add_dir(self,src_dir, img_prefix,ifkeep_old=True):
 
-        
+
         self.ds['root_dir'] = img_prefix
 
         file_ls = get_subfiles(src_dir)
@@ -68,13 +68,13 @@ class kvImgFilesMaintain:
         img_fn_ls = filter(
             lambda x: x[x.rfind('.')+1:].lower() in img_post_ls, file_ls
         )
-        
+
         invers_dict = self.ds['id_fn_mapping'].inverse
 
         img_fn_ls =list(img_fn_ls)
         for i,fn in track(enumerate(img_fn_ls)):
             relative_fn = fn[len(img_prefix):]
-            
+
             if relative_fn in invers_dict.keys():
                 continue
             self.ds['id_fn_mapping'][self.ds['next_id']] = relative_fn
@@ -96,7 +96,7 @@ class DTCRAWAnalysis:
         with open(kv_id_file,'rb') as f:
             self.kv_id_ds = pickle.load(f)
             self.type_counts_map = defaultdict(lambda: 0)
-    
+
     def type_statstics(self,):
         for id, fn in track(self.kv_id_ds['id_fn_mapping'].items()):
             img_fn = os.path.join(self.kv_id_ds['root_dir'], fn)
@@ -116,7 +116,7 @@ class DTCRAWAnalysis:
             found_type_k =False
 
             # 为 legacy 中data定制
-            # "Palate_visibleness":"Unrecognizable" 
+            # "Palate_visibleness":"Unrecognizable"
             if (ins_label.get('Palate_visibleness','') == 'Unrecognizable'):
                 lp_type = 'unrecognizable'
                 self.type_counts_map[lp_type]+=1
@@ -129,7 +129,7 @@ class DTCRAWAnalysis:
                 'license_type',
                 'license_type',
                 'vehiclePlate'
-            ]: 
+            ]:
                 lp_type = ins_label.get(candi_key,'')
                 if lp_type:
                     self.type_counts_map[lp_type]+=1
@@ -148,15 +148,16 @@ class DTCRAWAnalysis:
 
 
 
-    
-if __name__ == '__main__':
-    kv_ds_fn = '/media/112new_sde/LPD/LPDAnnotations/ID_ImgFiles_KV'
 
-    stastics_fn = '/media/112new_sde/LPD/LPDAnnotations/type_stats.pkl'
+if __name__ == '__main__':
+    # kv_ds_fn = '/media/112new_sde/LPD/LPDAnnotations/ID_ImgFiles_KV'
+    kv_ds_fn = '/media/112new_sde/LPD/LPDAnnotations/ID_ImgFiles_KV_sentry'
+
+    stastics_fn = '/media/112new_sde/LPD/LPDAnnotations/type_stats_sentry.pkl'
     ana = DTCRAWAnalysis(kv_ds_fn)
     ana.type_statstics()
     dd = ana.getdd()
-    
+
     for k, v in dd.items():
         print(f"{k}:\t{v}")
 

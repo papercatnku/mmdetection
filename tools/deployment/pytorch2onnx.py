@@ -43,7 +43,7 @@ def pytorch2onnx(model,
             onnx_output_nodes = output_names
         else:
             onnx_output_nodes = None
-            
+
         warnings.warn('Not all models support export onnx without post '
                       'process, especially two stage detectors!')
         model.forward = model.forward_dummy
@@ -212,9 +212,10 @@ def parse_normalize_cfg(test_pipeline):
     assert transforms is not None, 'Failed to find `transforms`'
     norm_config_li = [_ for _ in transforms if _['type'] == 'Normalize']
     assert len(norm_config_li) <= 1, '`norm_config` should only have one'
-    norm_config = norm_config_li[0] if len(norm_config_li)>0 else dict(mean=0.0, std=1.0)
+    norm_config = norm_config_li[0] if len(
+        norm_config_li) > 0 else dict(mean=0.0, std=1.0)
     return norm_config
-0
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -284,7 +285,7 @@ def parse_args():
         help='Whether to export model without post process. Experimental '
         'option. We do not guarantee the correctness of the exported '
         'model.')
-    
+
     parser.add_argument(
         '--output-names',
         type=lambda x: [x.strip() for x in x.split(',')],
@@ -301,12 +302,13 @@ if __name__ == '__main__':
         parsed directly from config file and are deprecated and \
         will be removed in future releases.')
 
-    assert args.opset_version == 11, 'MMDet only support opset 11 now'
+    # assert args.opset_version == 11, 'MMDet only support opset 11 now'
 
     try:
         from mmcv.onnx.symbolic import register_extra_symbolics
     except ModuleNotFoundError:
         raise NotImplementedError('please update mmcv to version>=v1.0.4')
+
     register_extra_symbolics(args.opset_version)
 
     cfg = Config.fromfile(args.config)
@@ -338,7 +340,7 @@ if __name__ == '__main__':
         args.input_img,
         input_shape,
         normalize_cfg,
-        opset_version=args.opset_version,
+        opset_version=11,
         show=args.show,
         output_file=args.output_file,
         verify=args.verify,
@@ -347,7 +349,7 @@ if __name__ == '__main__':
         dynamic_export=args.dynamic_export,
         skip_postprocess=args.skip_postprocess,
         output_names=args.output_names
-        )
+    )
 
     # Following strings of text style are from colorama package
     bright_style, reset_style = '\x1b[1m', '\x1b[0m'

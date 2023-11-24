@@ -88,7 +88,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
                      distribution='uniform',
                      mode='fan_in',
                      nonlinearity='leaky_relu'),
-                 merge_out=False,
+                 merge_out=True,
                  ):
 
         super().__init__(init_cfg=init_cfg)
@@ -201,31 +201,20 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         return cls_score, bbox_pred, objectness
 
     def _merge_out(self, multi_level_res):
+        '''
+        [
+        [cls0,cls1,cls2],
+        [bbox0,bbox1,bbox2],
+        [obj0,obj1,obj2],
+        ]
+        '''
+        cls_levels = multi_level_res[0]
+        bbox_levels = multi_level_res[1]
+        obj_levels = multi_level_res[2]
 
-        n, n_cls, _, _ = multi_level_res[0][0].shape
-
-        merged_cls = torch.cat(
-            [torch.reshape(x, (1, self.num_classes, -1))
-             for x in multi_level_res[0]],
-            dim=2,
-        )
-
-        merged_bbox = torch.cat(
-            [torch.reshape(x, (1, 4, -1)) for x in multi_level_res[1]],
-            dim=2,
-        )
-
-        merged_obj = torch.cat(
-            [torch.reshape(x, (1, 1, -1)) for x in multi_level_res[2]],
-            dim=2,
-        )
-
-        return merged_obj, merged_cls, merged_bbox
-
-        return [
-            torch.cat(
-                [torch.flatten(x, start_dim=2) for x in y],
-                dim=2) for y in multi_level_res]
+        objcls_levels = [torch.cat([x, y], dim=1)
+                         for x, y in zip(obj_levels, cls_levels)]
+        return objcls_levels, bbox_levels
 
     def forward(self, feats):
         """Forward features from the upstream network.

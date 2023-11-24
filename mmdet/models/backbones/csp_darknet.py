@@ -119,6 +119,7 @@ class SPPBottleneck(BaseModule):
         x = self.conv2(x)
         return x
 
+
 class SPPFBottleneck(BaseModule):
     def __init__(self,
                  in_channels,
@@ -140,20 +141,29 @@ class SPPFBottleneck(BaseModule):
             norm_cfg=norm_cfg,
             act_cfg=act_cfg)
         self.kernel_size_base = kernel_size_base
-        assert(kernel_sizes[0] == kernel_size_base)
+        assert (kernel_sizes[0] == kernel_size_base)
         for ks in kernel_sizes[1:]:
-            assert(ks %(self.kernel_size_base-1) == 1)
+            assert (ks % (self.kernel_size_base-1) == 1)
         self.poolings = nn.ModuleList(
             [
-            nn.Sequential(
-                *[
-            nn.MaxPool2d(
-            kernel_size=ks, 
-            stride=1, padding=ks // 2) for _ in range((ks-1) // (self.kernel_size_base-1))
-            ])
-            # nn.MaxPool2d(kernel_size=ks, stride=1, padding=ks // 2)
-            for ks in kernel_sizes]
-            )
+                nn.Sequential(
+                    *[
+                        nn.MaxPool2d(
+                            kernel_size=self.kernel_size_base,
+                            stride=1,
+                            padding=self.kernel_size_base // 2) for _ in range((ks-1) // (self.kernel_size_base-1))
+                    ])
+                # history error
+                # nn.Sequential(
+                #     *[
+                #         nn.MaxPool2d(
+                #             kernel_size=ks,
+                #             stride=1,
+                #             padding=ks // 2) for _ in range((ks-1) // (self.kernel_size_base-1))
+                #     ])
+
+                for ks in kernel_sizes]
+        )
         conv2_channels = mid_channels * (len(kernel_sizes) + 1)
         self.conv2 = ConvModule(
             conv2_channels,
@@ -168,7 +178,6 @@ class SPPFBottleneck(BaseModule):
         x = torch.cat([x] + [pooling(x) for pooling in self.poolings], dim=1)
         x = self.conv2(x)
         return x
-
 
 
 @BACKBONES.register_module()
