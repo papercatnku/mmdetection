@@ -387,7 +387,8 @@ class lpd_one_cls_cvt(obj_det_cvt_base):
             'electric_Motorcycle_Plate': 'LP',
             'military_Plate': 'LP',
             'black_Plate': 'LP',
-            'police_Plate': 'LP'
+            'police_Plate': 'LP',
+            '黄+绿小轿车': 'LP'
         }
         self.ignore_type_ls = [
             'paint_Plate'
@@ -427,7 +428,8 @@ class lpd_multi_cls_cvt(obj_det_cvt_base):
             'electric_Motorcycle_Plate': 'OTHER',
             'military_Plate': 'OTHER',
             'black_Plate': 'BLACK',
-            'police_Plate': 'WHITE'
+            'police_Plate': 'WHITE',
+            '黄+绿小轿车':'GREEN'
         }
         # innertype => superid, id
         self.innertype_id_mapping = {
@@ -455,11 +457,14 @@ if __name__ == '__main__':
         '/media/112new_sde/LPD/DTC_RAW/AVM/',
         '/media/112new_sde/LPD/DTC_RAW/APA/',
         '/media/112new_sde/LPD/DTC_RAW/HK_Macau/',
-        '/media/112new_sde/LPD/DTC_RAW/AVM_SENTRY/'
+        '/media/112new_sde/LPD/DTC_RAW/AVM_SENTRY/',
+        '/media/112new_sde/LPD/DTC_RAW/EX11/',
+        '/media/112new_sde/LPD/DTC_RAW/CS1E/'
     ]
     val_ratio = 0.05
     # out_coco = '/media/112new_sde/LPD/LPDAnnotations/coco_style/cls_1_nopaint/'
-    out_coco = '/media/112new_sde/LPD/LPDAnnotations/coco_style/cls_1_nopaint_231115/'
+    # out_coco = '/media/112new_sde/LPD/LPDAnnotations/coco_style/cls_1_nopaint_231129/'
+    out_coco = '/media/112new_sde/LPD/LPDAnnotations/coco_style/cls_1_nopaint_240306/'
     cvt = lpd_one_cls_cvt(
         base_dir=base_dir,
         num_process=20,

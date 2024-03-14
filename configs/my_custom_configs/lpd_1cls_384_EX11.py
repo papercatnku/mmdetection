@@ -1,6 +1,6 @@
 _base_ = ['../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py']
 
-img_scale = (480, 480)  # height, width
+img_scale = (384, 384)  # height, width
 
 num_classes = 1
 
@@ -10,21 +10,20 @@ test_backbone_cfg = dict(
     type='CSPDarknet',
     arch='P5',
     deepen_factor=0.33,
-    widen_factor=0.5,
+    widen_factor=0.25,
     out_indices=(2, 3, 4),
     use_depthwise=False,
-    spp_kernal_sizes=(5, 9, 13),
+    spp_kernal_sizes=(5, 9),
     act_cfg=act_cfg
 )
 
 test_neck_cfg = dict(
     type='YOLOXPAFPN',
-    in_channels=[128, 256, 512],
-    out_channels=128,
+    in_channels=[64, 128, 256],
+    out_channels=64,
     num_csp_blocks=2,
     use_depthwise=False,
-    # upsample_cfg=dict(scale_factor=2, mode='bilinear'),
-    upsample_cfg=dict(scale_factor=2, mode='bilinear',align_corners=True),
+    upsample_cfg=dict(scale_factor=2, mode='bilinear'),
     conv_cfg=None,
     norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
     act_cfg=act_cfg,
@@ -32,7 +31,7 @@ test_neck_cfg = dict(
 test_head_cfg = dict(
     type='YOLOXHead',
     num_classes=num_classes,
-    in_channels=128,
+    in_channels=64,
     feat_channels=128,
     strides=[8, 16, 32],
     use_depthwise=True,
@@ -42,7 +41,7 @@ test_head_cfg = dict(
 model = dict(
     type='YOLOX',
     input_size=img_scale,
-    random_size_range=(10, 18),
+    random_size_range=(10, 15),
     random_size_interval=20,
     backbone=test_backbone_cfg,
     neck=test_neck_cfg,
@@ -50,10 +49,9 @@ model = dict(
     train_cfg=dict(assigner=dict(type='SimOTAAssigner', center_radius=2.5)),
     # In order to align the source code, the threshold of the val phase is
     # 0.01, and the threshold of the test phase is 0.001.
-    test_cfg=dict(score_thr=0.01, nms=dict(type='nms', iou_threshold=0.65))
+    test_cfg=dict(score_thr=0.01, nms=dict(type='nms', iou_threshold=0.45))
 )
 
-# data_root = '/media/112new_sde/LPD/LPDAnnotations/coco_style/cls_1_nopaint_231030/'
 data_root = '/media/112new_sde/LPD/LPDAnnotations/coco_style/cls_1_nopaint_231129/'
 dataset_type = 'CocoDataset'
 img_prefix = '/media/112new_sde/LPD/DTC_RAW/'
@@ -63,13 +61,12 @@ train_pipeline = [
     dict(type='Mosaic', img_scale=img_scale, pad_val=114.0),
     dict(
         type='RandomAffine',
-        max_rotate_degree=10.0,
-        scaling_ratio_range=(0.5, 3),
+        scaling_ratio_range=(0.1, 2),
         border=(-img_scale[0] // 2, -img_scale[1] // 2)),
     dict(
         type='MixUp',
         img_scale=img_scale,
-        ratio_range=(0.8, 3.0),
+        ratio_range=(0.8, 1.6),
         pad_val=114.0),
     dict(type='YOLOXHSVRandomAug'),
     dict(type='RandomFlip', flip_ratio=0.5),
@@ -123,7 +120,7 @@ test_pipeline = [
 ]
 
 data = dict(
-    samples_per_gpu=48,
+    samples_per_gpu=96,
     workers_per_gpu=4,
     persistent_workers=True,
     train=train_dataset,
@@ -156,11 +153,9 @@ optimizer = dict(
 )
 optimizer_config = dict(grad_clip=None, detect_anomalous_params=True)
 
-# max_epochs = 215
-max_epochs = 150
-num_last_epochs = 15
+max_epochs = 200
+num_last_epochs = 20
 resume_from = None
-load_from = '/media/21sdg/zcy6735/modelzoo/lpd/lpd_1cls_sm_480_addsentrydata/epoch_300.pth'
 interval = 5
 
 # learning policy

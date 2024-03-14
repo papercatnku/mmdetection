@@ -1,6 +1,9 @@
 _base_ = ['../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py']
 
-img_scale = (480, 480)  # height, width
+load_from = '/media/112new_sde/ModelZoo/lpd/lpd_1cls_dvraug_1218/epoch_150.pth'
+
+img_scale = (640, 640)  # height, width
+# img_scale = (480, 480)  # height, width
 
 num_classes = 1
 
@@ -54,7 +57,8 @@ model = dict(
 )
 
 # data_root = '/media/112new_sde/LPD/LPDAnnotations/coco_style/cls_1_nopaint_231030/'
-data_root = '/media/112new_sde/LPD/LPDAnnotations/coco_style/cls_1_nopaint_231129/'
+# data_root = '/media/112new_sde/LPD/LPDAnnotations/coco_style/cls_1_nopaint_231115/'
+data_root = '/media/112new_sde/LPD/LPDAnnotations/coco_style/cls_1_nopaint_240306/'
 dataset_type = 'CocoDataset'
 img_prefix = '/media/112new_sde/LPD/DTC_RAW/'
 
@@ -123,7 +127,7 @@ test_pipeline = [
 ]
 
 data = dict(
-    samples_per_gpu=48,
+    samples_per_gpu=32,
     workers_per_gpu=4,
     persistent_workers=True,
     train=train_dataset,
@@ -157,10 +161,9 @@ optimizer = dict(
 optimizer_config = dict(grad_clip=None, detect_anomalous_params=True)
 
 # max_epochs = 215
-max_epochs = 150
-num_last_epochs = 15
+max_epochs = 60
+num_last_epochs = 10
 resume_from = None
-load_from = '/media/21sdg/zcy6735/modelzoo/lpd/lpd_1cls_sm_480_addsentrydata/epoch_300.pth'
 interval = 5
 
 # learning policy
@@ -193,6 +196,9 @@ custom_hooks = [
         momentum=0.0001,
         priority=49)
 ]
+
+
+
 checkpoint_config = dict(interval=interval)
 evaluation = dict(
     save_best='auto',
